@@ -1,8 +1,4 @@
 {
-  "search.exclude": {
-    "**/out": true,
-    "**/dist": true
-  },
   // Disable auto-detected build tasks to avoid duplicates; this project uses npm script tasks instead
   "typescript.tsc.autoDetect": "off"
 }

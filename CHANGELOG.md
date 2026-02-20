@@ -1,8 +1,27 @@
 # Changelog
 
-This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) formatting and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Semantic Versioning](https://semver.org/spec/v2.0.0.html) conventions.
 
 ## \[Unreleased]
+
+## \[0.3.1] - 2026-02-20
+
+### Changed
+
+- Updated command naming to match VS Code title-case conventions (`Open with Built-in Text Editor`)
+- Updated README command labels to match in-product command titles
+
+## \[0.3.0] - 2026-02-20
+
+### Added
+
+- Link insertion/edit via `Cmd+Alt+K`
+- Image paste support via in-document `data:` URLs
+
+### Changed
+
+- Renamed editor switching commands to `Open with Markdown Editor (WYSIWYG)` and `Open with built-in text editor`
+- Updated docs for current GFM accessibility
 
 ## \[0.2.0] - 2026-02-20
 
@@ -40,5 +59,5 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - Initial release of the Markdown Editor (WYSIWYG) extension
 - Rich text editing for GitHub Flavored Markdown (GFM)
 - In-editor Find support (`Command+F`) inside the rich text view
-- `Open in Markdown Editor (WYSIWYG)` command and editor tab bar action
-- `View Source` command and editor tab bar action to reopen the active file in the built-in text editor
+- `Open with Markdown Editor (WYSIWYG)` command and editor tab bar action
+- `Open with Built-in Text Editor` command and editor tab bar action to reopen the active file in the built-in text editor

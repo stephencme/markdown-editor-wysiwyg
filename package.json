@@ -8,7 +8,7 @@
     "type": "git",
     "url": "https://github.com/stephencme/markdown-editor-wysiwyg.git"
   },
-  "version": "0.2.0",
+  "version": "0.3.1",
   "engines": {
     "vscode": "^1.105.0"
   },
@@ -24,35 +24,35 @@
   "contributes": {
     "commands": [
       {
-        "command": "stephencme.markdownEditor.viewSource",
-        "title": "View Source",
+        "command": "stephencme.markdownEditor.openWithBuiltInTextEditor",
+        "title": "Open with Built-in Text Editor",
         "icon": "$(go-to-file)"
       },
       {
-        "command": "stephencme.markdownEditor.openInMarkdownEditor",
-        "title": "Open in Markdown Editor (WYSIWYG)",
+        "command": "stephencme.markdownEditor.openWithMarkdownEditor",
+        "title": "Open with Markdown Editor (WYSIWYG)",
         "icon": "$(markdown)"
       }
     ],
     "menus": {
       "commandPalette": [
         {
-          "command": "stephencme.markdownEditor.viewSource",
+          "command": "stephencme.markdownEditor.openWithBuiltInTextEditor",
           "when": "activeCustomEditorId == stephencme.markdownEditor.editorView"
         },
         {
-          "command": "stephencme.markdownEditor.openInMarkdownEditor",
+          "command": "stephencme.markdownEditor.openWithMarkdownEditor",
           "when": "editorLangId == markdown"
         }
       ],
       "editor/title": [
         {
-          "command": "stephencme.markdownEditor.viewSource",
+          "command": "stephencme.markdownEditor.openWithBuiltInTextEditor",
           "when": "activeCustomEditorId == stephencme.markdownEditor.editorView",
           "group": "navigation"
         },
         {
-          "command": "stephencme.markdownEditor.openInMarkdownEditor",
+          "command": "stephencme.markdownEditor.openWithMarkdownEditor",
           "when": "editorLangId == markdown",
           "group": "navigation"
         }

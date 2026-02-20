@@ -1,8 +1,8 @@
-<!-- Last updated by AI: 2026-02-18 -->
+<!-- Last updated by AI: 2026-02-20 -->
 
 # markdown-editor-wysiwyg
 
-VS Code extension. Bundled with esbuild, tested with `@vscode/test-cli`. To debug in VS Code, this extension should be opened in its own workspace i.e. `cd pangolin/vscode && code .`.
+VS Code extension. Bundled with esbuild, tested with `@vscode/test-cli`. To use VS Code debugger tools, this extension must support being opened as its own workspace i.e. `cd pangolin/vscode` then `code .`
 
 ## Architecture
 
@@ -64,9 +64,12 @@ Press `F5` to launch an Extension Development Host. The default build task start
 
 ## Packaging and publishing
 
-`pnpm vsce:package` to produce a `.vsix`. The `--no-dependencies` flag is required because `vsce` runs `npm list` which can't resolve pnpm's symlinked `node_modules`; all production dependencies are already bundled by esbuild. See [Publishing Extensions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension).
+All packaging and publishing scripts use `--no-dependencies` because `npm list` can't resolve pnpm's symlinked `node_modules`; all production dependencies are already bundled by esbuild.
 
-For Open VSX, use `pnpm ovsx:package` and `pnpm ovsx:publish` (requires `OPENVSX_TOKEN`). After publishing, verify the listing at `https://open-vsx.org/extension/stephencme/markdown-editor-wysiwyg`.
+- **VS Code Marketplace:** `pnpm vsce:package` to produce a `.vsix`, `pnpm vsce:publish` to publish (requires `VSCE_PAT`). See [Publishing Extensions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension).
+- **Open VSX:** `pnpm ovsx:package` to produce a `.vsix`, `pnpm ovsx:publish` to publish (requires `OPENVSX_TOKEN`). See [Publishing Extensions (Open VSX)](https://github.com/eclipse/openvsx/wiki/Publishing-Extensions).
+
+The `publish-pangolin-vscode.yml` GitHub Action publishes to both marketplaces automatically on `pangolin/vscode@*` tag push.
 
 Cursor sources extensions from Open VSX and applies its own verification/indexing, so availability in Cursor can lag briefly after Open VSX publish. See [Cursor extension docs](https://cursor.com/docs/configuration/extensions).
 

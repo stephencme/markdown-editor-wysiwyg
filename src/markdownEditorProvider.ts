@@ -11,6 +11,30 @@ import {
 export const EDITOR_NAMESPACE = "stephencme.markdownEditor";
 export const EDITOR_VIEW_ID = `${EDITOR_NAMESPACE}.editorView`;
 const DEBOUNCE_MS = 300;
+const ALLOWED_LINK_PROTOCOLS = new Set(["https", "http", "mailto", "tel"]);
+
+type WebviewMessage = {
+  type: string;
+  html?: string;
+  href?: string;
+  selectedText?: string;
+  currentHref?: string;
+  hasSelection?: boolean;
+};
+
+function validateLinkHref(input: string): string | null {
+  const href = input.trim();
+  if (!href) return "Link URL is required";
+
+  try {
+    // Base URL keeps relative paths/fragments parseable like in webview link rules
+    const protocol = new URL(href, "https://_").protocol.replace(":", "");
+    if (ALLOWED_LINK_PROTOCOLS.has(protocol)) return null;
+    return "Only http, https, mailto, and tel links are allowed";
+  } catch {
+    return "Enter a valid link URL";
+  }
+}
 
 export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
   constructor(private readonly extensionUri: vscode.Uri) {}
@@ -93,7 +117,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
     }
 
     const messageDisposable = webviewPanel.webview.onDidReceiveMessage(
-      async (message: { type: string; html?: string; href?: string }) => {
+      async (message: WebviewMessage) => {
         switch (message.type) {
           case "READY": {
             const { comments, body } = extractHtmlComments(document.getText());
@@ -129,6 +153,42 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
                 vscode.Uri.joinPath(docDir, href),
               );
             }
+            break;
+          }
+
+          case "REQUEST_LINK": {
+            const initialHref = String(message.currentHref ?? "");
+            if (message.hasSelection) {
+              const href = await vscode.window.showInputBox({
+                title: "Insert Link",
+                prompt: "Enter link URL",
+                placeHolder: "https://example.com",
+                value: initialHref,
+                ignoreFocusOut: true,
+                validateInput: validateLinkHref,
+              });
+              if (!href) return;
+              webviewPanel.webview.postMessage({
+                type: "APPLY_LINK",
+                href,
+              });
+              break;
+            }
+
+            const href = await vscode.window.showInputBox({
+              title: "Insert Link",
+              prompt: "Enter link URL",
+              placeHolder: "https://example.com",
+              value: initialHref,
+              ignoreFocusOut: true,
+              validateInput: validateLinkHref,
+            });
+            if (!href) return;
+            webviewPanel.webview.postMessage({
+              type: "APPLY_LINK",
+              href,
+              text: href,
+            });
             break;
           }
         }

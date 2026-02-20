@@ -35,20 +35,23 @@ export function activate(context: vscode.ExtensionContext) {
   setDefaultEditorAssociation();
   context.subscriptions.push(MarkdownEditorProvider.register(context));
   context.subscriptions.push(
-    vscode.commands.registerCommand(`${EDITOR_NAMESPACE}.viewSource`, () => {
-      const input = vscode.window.tabGroups.activeTabGroup.activeTab?.input;
-      const uri =
-        input instanceof vscode.TabInputCustom
-          ? input.uri
-          : vscode.window.activeTextEditor?.document.uri;
-      if (uri) {
-        vscode.commands.executeCommand("vscode.openWith", uri, "default");
-      }
-    }),
+    vscode.commands.registerCommand(
+      `${EDITOR_NAMESPACE}.openWithBuiltInTextEditor`,
+      () => {
+        const input = vscode.window.tabGroups.activeTabGroup.activeTab?.input;
+        const uri =
+          input instanceof vscode.TabInputCustom
+            ? input.uri
+            : vscode.window.activeTextEditor?.document.uri;
+        if (uri) {
+          vscode.commands.executeCommand("vscode.openWith", uri, "default");
+        }
+      },
+    ),
   );
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      `${EDITOR_NAMESPACE}.openInMarkdownEditor`,
+      `${EDITOR_NAMESPACE}.openWithMarkdownEditor`,
       () => {
         const uri = vscode.window.activeTextEditor?.document.uri;
         if (uri) {

@@ -70,6 +70,26 @@ const rehypeNormalizeTiptap: Plugin = () => (tree) => {
   }
 };
 
+// Convert editor-specific link attributes back to standard HTML before
+// any HTML-to-markdown conversion path
+const rehypeRestoreEditorLinks: Plugin = () => (tree) => {
+  const stack: HastNode[] = [tree as unknown as HastNode];
+  while (stack.length) {
+    const node = stack.pop()!;
+    const props = (node.properties ?? {}) as Record<string, unknown>;
+
+    if (node.tagName === "a" && typeof props.dataHref === "string") {
+      props.href = props.dataHref;
+      delete props.dataHref;
+    }
+
+    const children = node.children;
+    if (Array.isArray(children)) {
+      for (const child of children) stack.push(child as HastNode);
+    }
+  }
+};
+
 // Force tight lists so remark-stringify omits blank lines between items
 const remarkTightLists: Plugin = () => (tree) => {
   const stack: unknown[] = [tree];
@@ -93,6 +113,7 @@ const markdownToHtmlProcessor = unified()
 
 const htmlToMarkdownProcessor = unified()
   .use(rehypeParse, { fragment: true })
+  .use(rehypeRestoreEditorLinks)
   .use(rehypeNormalizeTiptap)
   .use(rehypeRemark)
   .use(remarkGfm)

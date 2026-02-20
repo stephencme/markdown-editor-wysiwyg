@@ -79,6 +79,14 @@ suite("markdownToHtml", () => {
     assert.strictEqual(html, '<p><img src="img.png" alt="alt"></p>');
   });
 
+  test("image data URL", async () => {
+    const html = await markdownToHtml("![alt](data:image/png;base64,AAAA)");
+    assert.strictEqual(
+      html,
+      '<p><img src="data:image/png;base64,AAAA" alt="alt"></p>',
+    );
+  });
+
   test("table", async () => {
     const md = "| A | B |\n| --- | --- |\n| 1 | 2 |";
     const html = await markdownToHtml(md);
@@ -123,6 +131,13 @@ suite("htmlToMarkdown", () => {
     assert.strictEqual(md.trim(), "![pic](a.png)");
   });
 
+  test("image data URL", async () => {
+    const md = await htmlToMarkdown(
+      '<p><img src="data:image/png;base64,AAAA" alt="pic"></p>',
+    );
+    assert.strictEqual(md.trim(), "![pic](data:image/png;base64,AAAA)");
+  });
+
   test("table", async () => {
     const html =
       "<table><thead><tr><th>X</th></tr></thead><tbody><tr><td>1</td></tr></tbody></table>";
@@ -159,6 +174,12 @@ suite("htmlToMarkdown", () => {
   test("uses dash bullets", async () => {
     const md = await htmlToMarkdown("<ul><li>item</li></ul>");
     assert.match(md, /^- /m);
+  });
+
+  test("data-href link converts to markdown link", async () => {
+    const html = '<p><a data-href="https://example.com">click</a></p>';
+    const md = await htmlToMarkdown(html);
+    assert.strictEqual(md.trim(), "[click](https://example.com)");
   });
 });
 

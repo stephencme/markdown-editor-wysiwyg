@@ -1,31 +1,42 @@
 # Markdown Editor (WYSIWYG)
 
-A beautiful, distraction-free editor for Markdown.
+A clean, distraction-free editor for Markdown.
 
-## Features
+Edit [GFM (GitHub Flavored Markdown)](https://github.github.com/gfm/) as rich text with all of the benefits of `.md` files – clean, readable, and source control-friendly.
 
-- Edit [GFM (GitHub Flavored Markdown)](https://github.github.com/gfm/) with confidence; your Markdown stays clean and readable
-- **Find** (Command+F) – in-editor search
-- **"Open in Markdown Editor (WYSIWYG)"** tab bar button/command – opens the rich text editor
-- **"View Source"** tab bar button/command – opens the built-in text editor
-- **Built to be used side-by-side with your AI agent of choice** – updates in real time as your Markdown changes
+The editor updates in real time as your Markdown changes, so it works perfectly side-by-side with your AI agent of choice like Cursor, Claude Code, and Codex.
 
 ![Screenshot](https://raw.githubusercontent.com/stephencme/markdown-editor-wysiwyg/main/media/screenshot.png)
 
-## Usage
+## Quick start
 
-After installing the extension, your IDE will use it as the default editor for `.md` files. To use the built-in text editor instead, right-click a file and choose **Open with...** > **Text Editor (Built-In)**.
+Right-click any `.md` file in the Files Explorer and choose **Open with...** > **Markdown Editor (WYSIWYG)**.
 
-Note: your IDE may remember the last editor used for a specific file. If a Markdown file opens in the built-in editor, use **Open with...** > **Markdown Editor (WYSIWYG)** (or run **Open in Markdown Editor (WYSIWYG)**) to switch it back.
+### Switch between editors
 
-### View Source
+The **Open with Built-in Text Editor** and **Open with Markdown Editor (WYSIWYG)** commands are available from the tab bar and Command Palette.
 
-The **"View Source"** button in the editor tab bar opens the raw Markdown in your IDE's built-in text editor. In Cursor 2.1+, editor action icons are [hidden by default](https://forum.cursor.com/t/editor-actions-icons-disappeared-in-2-1-0-version/143207). To show them, click on the three dots in the editor tab bar and select **Configure Icon Visibility**.
+_Note that in Cursor 2.1+, editor action icons are [hidden by default](https://forum.cursor.com/t/editor-actions-icons-disappeared-in-2-1-0-version/143207). To show them, click on the three dots in the editor tab bar menu and select **Configure Icon Visibility** for each command._
 
-You can also run "View Source" from the Command Palette (Command+Shift+P).
+#### Open with Built-in Text Editor
 
-### Open in Markdown Editor (WYSIWYG)
+Opens the current `.md` file in your IDE's built-in text editor (available when the rich text editor is open).
 
-When a `markdown` file is open in the built-in text editor, the **"Open in Markdown Editor (WYSIWYG)"** button in the editor tab bar opens the rich text editor. The same icon visibility note above applies.
+#### Open with Markdown Editor (WYSIWYG)
 
-You can also run "Open in Markdown Editor (WYSIWYG)" from the Command Palette (Command+Shift+P).
+Opens the current `.md` file in the rich text editor (available when your IDE's built-in text editor is open).
+
+## GFM accessibility
+
+The editor supports GFM round-tripping for all major types:
+
+| GFM type                                                 | Accessibility                                                                                                                                      |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Heading 1-6                                              | Keyboard (`Cmd+Alt+1..6`) and markdown (`#`..`######`)                                                                                             |
+| Bold / italic / strikethrough / inline code / code block | Keyboard (`Cmd+B`, `Cmd+I`, `Cmd+Shift+S`, `Cmd+E`, `Cmd+Alt+C`) and markdown (`**text**`, `*text*`, `~~text~~`, `` `text` ``, fenced code blocks) |
+| Blockquote / bullet list / ordered list / task list      | Keyboard (`Cmd+Shift+B`, `Cmd+Shift+8`, `Cmd+Shift+7`, `Cmd+Shift+9`) and markdown (`>`, `-`/`+`/`*`, `1.`, `[ ]` / `[x]`)                         |
+| Horizontal rule                                          | Markdown (`---`, `___`, `***`)                                                                                                                     |
+| Hard break                                               | Keyboard (`Cmd+Enter` / `Shift+Enter`)                                                                                                             |
+| Link                                                     | Keyboard (`Cmd+Alt+K`) and insert on paste                                                                                                         |
+| Image                                                    | Insert on paste (`data:` URLs)                                                                                                                     |
+| Table                                                    | Partially editable (inserting new tables/rows/columns not yet supported)                                                                           |

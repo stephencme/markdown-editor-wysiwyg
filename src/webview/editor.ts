@@ -12,6 +12,8 @@ import { Plugin } from "@tiptap/pm/state";
 import StarterKit from "@tiptap/starter-kit";
 import { ClipboardMarkdown } from "./clipboardMarkdown.js";
 import { FindExtension, bindFindBar } from "./find.js";
+import { bindImageInput } from "./imageInput.js";
+import { createNativeLinkShortcut, handleLinkMessage } from "./links.js";
 
 const vscode = acquireVsCodeApi();
 
@@ -69,6 +71,7 @@ const editor = new Editor({
     TableCell,
     TaskList,
     TaskItem.configure({ nested: true }),
+    createNativeLinkShortcut(vscode),
     ClipboardMarkdown,
     FindExtension,
   ],
@@ -83,6 +86,7 @@ const editor = new Editor({
 });
 
 bindFindBar(editor);
+bindImageInput(editor);
 
 window.addEventListener("message", (event) => {
   const message = event.data;
@@ -109,7 +113,10 @@ window.addEventListener("message", (event) => {
     if (wasEditorFocused) {
       editor.commands.focus();
     }
+    return;
   }
+
+  handleLinkMessage(editor, message);
 });
 
 vscode.postMessage({ type: "READY" });

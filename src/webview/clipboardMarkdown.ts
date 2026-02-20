@@ -32,11 +32,6 @@ export const ClipboardMarkdown = Extension.create({
               this.editor.schema,
             ).serializeFragment(slice.content);
             div.appendChild(fragment);
-            // Restore data-href to href so the markdown converter recognizes links
-            for (const a of Array.from(div.querySelectorAll("a[data-href]"))) {
-              a.setAttribute("href", a.getAttribute("data-href")!);
-              a.removeAttribute("data-href");
-            }
             return htmlToMarkdownSync(div.innerHTML);
           },
         },
