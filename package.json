@@ -1,0 +1,126 @@
+{
+  "name": "markdown-editor-wysiwyg",
+  "publisher": "stephencme",
+  "displayName": "Markdown Editor (WYSIWYG)",
+  "description": "A beautiful, distraction-free editor for Markdown.",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stephencme/markdown-editor-wysiwyg.git"
+  },
+  "version": "0.2.0",
+  "engines": {
+    "vscode": "^1.105.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "type": "module",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.cjs",
+  "contributes": {
+    "commands": [
+      {
+        "command": "stephencme.markdownEditor.viewSource",
+        "title": "View Source",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "stephencme.markdownEditor.openInMarkdownEditor",
+        "title": "Open in Markdown Editor (WYSIWYG)",
+        "icon": "$(markdown)"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "stephencme.markdownEditor.viewSource",
+          "when": "activeCustomEditorId == stephencme.markdownEditor.editorView"
+        },
+        {
+          "command": "stephencme.markdownEditor.openInMarkdownEditor",
+          "when": "editorLangId == markdown"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "stephencme.markdownEditor.viewSource",
+          "when": "activeCustomEditorId == stephencme.markdownEditor.editorView",
+          "group": "navigation"
+        },
+        {
+          "command": "stephencme.markdownEditor.openInMarkdownEditor",
+          "when": "editorLangId == markdown",
+          "group": "navigation"
+        }
+      ]
+    },
+    "customEditors": [
+      {
+        "viewType": "stephencme.markdownEditor.editorView",
+        "displayName": "Markdown Editor (WYSIWYG)",
+        "selector": [
+          {
+            "filenamePattern": "*.md"
+          }
+        ],
+        "priority": "option"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "pnpm run package",
+    "clean": "node -e \"const fs=require('node:fs'); fs.rmSync('dist',{recursive:true,force:true});\"",
+    "compile": "pnpm run clean && pnpm run check:types && pnpm run lint && node esbuild.js && pnpm run compile:css",
+    "compile:css": "tailwindcss -i src/webview/editor.css -o dist/webview/editor.css",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:css": "tailwindcss -i src/webview/editor.css -o dist/webview/editor.css --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "package": "pnpm run clean && pnpm run check:types && pnpm run lint && node esbuild.js --production && pnpm run compile:css",
+    "compile:tests": "tsc -p . --outDir out",
+    "watch:tests": "tsc -p . -w --outDir out",
+    "pretest": "pnpm run compile:tests && pnpm run compile",
+    "check:types": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vscode-test",
+    "vsce:package": "vsce package --no-dependencies",
+    "vsce:publish": "vsce publish --no-dependencies",
+    "ovsx:package": "pnpm vsce:package",
+    "ovsx:publish": "pnpm dlx ovsx publish --no-dependencies -p \"$OPENVSX_TOKEN\""
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.18",
+    "@tailwindcss/typography": "^0.5.19",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@types/vscode": "^1.105.0",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.7.1",
+    "esbuild": "^0.27.2",
+    "tailwindcss": "^4.1.18",
+    "typescript": "catalog:"
+  },
+  "dependencies": {
+    "@tiptap/core": "^3.20.0",
+    "@tiptap/extension-code": "^3.20.0",
+    "@tiptap/extension-image": "^3.20.0",
+    "@tiptap/extension-link": "^3.20.0",
+    "@tiptap/extension-table": "^3.20.0",
+    "@tiptap/extension-task-item": "^3.20.0",
+    "@tiptap/extension-task-list": "^3.20.0",
+    "@tiptap/pm": "^3.20.0",
+    "@tiptap/starter-kit": "^3.20.0",
+    "rehype-parse": "^9.0.1",
+    "rehype-remark": "^10.0.1",
+    "rehype-stringify": "^10.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.2",
+    "remark-stringify": "^11.0.0",
+    "unified": "^11.0.5"
+  }
+}

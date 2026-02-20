@@ -1,0 +1,15 @@
+.DS_Store
+.gitignore
+.npmrc
+.vscode-test/**
+.vscode/**
+*.log
+**/.vscode-test.*
+**/*.map
+**/*.ts
+**/tsconfig.json
+CONTRIBUTING.md
+esbuild.js
+node_modules/**
+out/**
+src/**

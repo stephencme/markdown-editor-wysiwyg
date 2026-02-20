@@ -1,0 +1,132 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* Scan extension source for class usage */
+@source "..";
+
+body {
+  margin: 0;
+  padding: 1rem;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  color: var(--vscode-editor-foreground);
+  background: var(--vscode-editor-background);
+}
+
+/* Map prose colors to VS Code theme variables */
+.prose {
+  --tw-prose-body: var(--vscode-editor-foreground);
+  --tw-prose-headings: var(--vscode-editor-foreground);
+  --tw-prose-lead: var(--vscode-editor-foreground);
+  --tw-prose-links: var(--vscode-textLink-foreground);
+  --tw-prose-bold: var(--vscode-editor-foreground);
+  --tw-prose-counters: var(--vscode-descriptionForeground);
+  --tw-prose-bullets: var(--vscode-descriptionForeground);
+  --tw-prose-hr: var(
+    --vscode-editorWidget-border,
+    var(--vscode-editor-foreground)
+  );
+  --tw-prose-quotes: var(--vscode-editor-foreground);
+  --tw-prose-quote-borders: var(
+    --vscode-editorWidget-border,
+    var(--vscode-editor-foreground)
+  );
+  --tw-prose-code: var(--vscode-editor-foreground);
+  --tw-prose-pre-code: var(--vscode-editor-foreground);
+  --tw-prose-pre-bg: var(--vscode-textCodeBlock-background);
+  --tw-prose-th-borders: var(
+    --vscode-editorWidget-border,
+    var(--vscode-editor-foreground)
+  );
+  --tw-prose-td-borders: var(
+    --vscode-editorWidget-border,
+    var(--vscode-editor-foreground)
+  );
+}
+
+.tiptap {
+  outline: none;
+  min-height: 100vh;
+}
+
+/* Override prose img margins: inline images live inside <p> tags, so prose's
+   2em top/bottom img margins stack with paragraph margins and create extra blocks */
+.tiptap img {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Task list: remove default list bullets and lay out checkbox inline */
+.tiptap ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.tiptap ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+}
+
+.tiptap ul[data-type="taskList"] li > label {
+  margin-right: 0.5rem;
+  user-select: none;
+}
+
+#find-bar {
+  display: none;
+  position: fixed;
+  top: 4px;
+  right: 4px;
+  align-items: center;
+  padding: 4px 6px;
+  background: var(--vscode-editorWidget-background);
+  border: 1px solid var(--vscode-editorWidget-border, transparent);
+}
+
+#find-bar.visible {
+  display: flex;
+}
+
+#find-input {
+  width: 200px;
+  padding: 2px 4px;
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border, transparent);
+  color: var(--vscode-input-foreground);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  outline: none;
+}
+
+#find-input:focus {
+  border-color: var(--vscode-focusBorder);
+}
+
+#find-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: 6px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  color: var(--vscode-icon-foreground);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
+#find-close:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+
+.find-match {
+  background-color: var(--vscode-editor-findMatchHighlightBackground);
+}
+
+.find-match-current {
+  background-color: var(--vscode-editor-findMatchBackground);
+}
