@@ -42,7 +42,7 @@ const editor = new Editor({
     StarterKit.configure({ code: false }),
     // Allow code + link marks to coexist (default Code excludes all marks)
     Code.extend({ excludes: "" }),
-    Image.configure({ inline: true }),
+    Image.configure({ inline: true }).extend({ marks: "link" }),
     Link.configure({
       openOnClick: false,
       isAllowedUri: (url) => {

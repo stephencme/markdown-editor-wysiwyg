@@ -106,10 +106,57 @@ suite("markdownToHtml", () => {
 
   test("task list", async () => {
     const html = await markdownToHtml("- [ ] todo\n- [x] done");
-    assert.match(html, /type="checkbox"/);
-    assert.match(html, /checked/);
+    assert.match(html, /data-type="taskList"/);
+    assert.match(html, /data-type="taskItem"/);
+    assert.match(html, /data-checked="true"/);
     assert.match(html, /todo/);
     assert.match(html, /done/);
+  });
+
+  test("empty task item renders as checkbox taskItem", async () => {
+    const html = await markdownToHtml("- [ ]");
+    assert.match(html, /data-type="taskList"/);
+    assert.match(html, /data-type="taskItem"/);
+    assert.match(html, /data-checked="false"/);
+    assert.doesNotMatch(html, /\[ ]/);
+  });
+
+  test("nested task list", async () => {
+    const html = await markdownToHtml(
+      "- [ ] one\n  - [x] two\n  - [ ] more\n- [ ] three",
+    );
+    assert.match(html, /data-type="taskList"/);
+    // Nested list should also be a taskList, not a plain ul
+    const taskListCount = (html.match(/data-type="taskList"/g) ?? []).length;
+    assert.strictEqual(
+      taskListCount,
+      2,
+      "should have outer and nested taskList",
+    );
+    assert.match(html, /data-checked="true"/);
+  });
+
+  test("nested empty task items stay as task lists", async () => {
+    const html = await markdownToHtml("- [ ]\n  - [ ]\n- [ ]");
+    const taskListCount = (html.match(/data-type="taskList"/g) ?? []).length;
+    const taskItemCount = (html.match(/data-type="taskItem"/g) ?? []).length;
+    assert.strictEqual(
+      taskListCount,
+      2,
+      "should have outer and nested taskList for empty task items",
+    );
+    assert.strictEqual(taskItemCount, 3, "should render all empty task items");
+    assert.doesNotMatch(html, /\[ ]/);
+  });
+
+  test("nested marker-only empty task item in mixed list renders as taskItem", async () => {
+    const html = await markdownToHtml(
+      "- [ ] one\n  - [x] 1\n  - [ ]\n- [ ] two\n- [x] three",
+    );
+    assert.doesNotMatch(html, /<li>\[ \]<\/li>/);
+    assert.match(html, /data-type="taskItem"/);
+    assert.match(html, /data-checked="false"/);
+    assert.match(html, /data-checked="true"/);
   });
 
   test("link", async () => {
@@ -206,6 +253,34 @@ suite("htmlToMarkdown", () => {
     const md = await htmlToMarkdown(tiptapHtml);
     assert.match(md, /\[ ] todo/);
     assert.match(md, /\[x] done/);
+  });
+
+  test("empty Tiptap taskItem preserves unchecked brackets", async () => {
+    const tiptapHtml =
+      '<ul data-type="taskList">' +
+      '<li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p></p></div></li>' +
+      "</ul>";
+    const md = await htmlToMarkdown(tiptapHtml);
+    assert.match(md, /^- \[ ]\s*$/m);
+  });
+
+  test("empty Tiptap taskItem with nested taskList does not produce double bullet", async () => {
+    // Simulates the HTML Tiptap produces after pressing Enter at the end of a
+    // task item that has nested children: an empty taskItem wrapping a nested taskList
+    const tiptapHtml =
+      '<ul data-type="taskList">' +
+      '<li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>one</p></div></li>' +
+      '<li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p></p>' +
+      '<ul data-type="taskList">' +
+      '<li data-type="taskItem" data-checked="true"><label><input type="checkbox" checked="checked"><span></span></label><div><p>two</p></div></li>' +
+      "</ul></div></li></ul>";
+    const md = await htmlToMarkdown(tiptapHtml);
+    assert.ok(
+      !md.includes("- -"),
+      `should not produce double bullet pattern; got:\n${md}`,
+    );
+    assert.match(md, /\[ ] one/);
+    assert.match(md, /\[x] two/);
   });
 
   test("Tiptap table HTML round-trips", async () => {

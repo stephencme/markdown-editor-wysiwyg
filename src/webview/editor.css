@@ -47,29 +47,74 @@ body {
 .tiptap {
   outline: none;
   min-height: 100vh;
+  /* Shared list rhythm across ul/ol/taskList */
+  --list-item-spacing: 0.5em;
+  --nested-list-spacing: 0.75em;
+  --task-checkbox-offset: 0.15em;
+  --task-checkbox-gutter: 1.5rem;
 }
 
-/* Override prose img margins: inline images live inside <p> tags, so prose's
-   2em top/bottom img margins stack with paragraph margins and create extra blocks */
+/* Override Tailwind preflight (display: block) and prose img margins so that
+   inline images (badges, icons) stay on the same line as surrounding content */
 .tiptap img {
+  display: inline;
+  margin-top: 0;
+  margin-bottom: 0;
+  vertical-align: middle;
+}
+
+/* Normalize list rhythm across unordered, ordered, and task lists */
+.tiptap :is(ul, ol) > li {
   margin-top: 0;
   margin-bottom: 0;
 }
 
-/* Task list: remove default list bullets and lay out checkbox inline */
+.tiptap :is(ul, ol) > li + li {
+  margin-top: var(--list-item-spacing);
+}
+
+.tiptap :is(ul, ol) :is(ul, ol) {
+  margin-top: var(--nested-list-spacing);
+  margin-bottom: var(--nested-list-spacing);
+}
+
+/* Task list structure */
 .tiptap ul[data-type="taskList"] {
   list-style: none;
-  padding-left: 0;
+  margin-left: 0;
+  padding: 0;
 }
 
 .tiptap ul[data-type="taskList"] li {
-  display: flex;
-  align-items: flex-start;
+  position: relative;
 }
 
 .tiptap ul[data-type="taskList"] li > label {
-  margin-right: 0.5rem;
+  position: absolute;
+  top: var(--task-checkbox-offset);
+  left: 0;
+  margin: 0;
   user-select: none;
+}
+
+.tiptap ul[data-type="taskList"] li > div {
+  padding-left: var(--task-checkbox-gutter);
+}
+
+/* Prevent nested task groups from adding trailing ancestor space */
+.tiptap ul[data-type="taskList"] li > div > :is(ul, ol) {
+  margin-bottom: 0;
+}
+
+/* Zero prose paragraph margins inside task items; they cause checkbox
+   misalignment and excess vertical spacing between items */
+.tiptap ul[data-type="taskList"] li > div > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.tiptap ul[data-type="taskList"] input[type="checkbox"] {
+  cursor: pointer;
 }
 
 #find-bar {

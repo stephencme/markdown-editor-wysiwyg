@@ -4,6 +4,15 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## \[Unreleased]
 
+## \[0.5.0] - 2026-02-23
+
+### Changed
+
+- Stabilized GFM task-list round-trip behavior, including empty and nested task-item bracket preservation
+- Improved list spacing/alignment consistency in the editor and preserved linked inline images in round-trips
+- Updated webview reading width for improved markdown editing ergonomics
+- Release includes: https://github.com/stephencme/apps/pull/11
+
 ## \[0.4.0] - 2026-02-23
 
 ### Changed

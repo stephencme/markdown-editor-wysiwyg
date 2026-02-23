@@ -60,7 +60,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
     <input id="find-input" type="text" placeholder="Find">
     <button id="find-close" title="Close (Escape)" aria-label="Close">✕</button>
   </div>
-  <div id="editor" class="prose max-w-none"></div>
+  <div id="editor" class="prose mx-auto"></div>
   <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`;
