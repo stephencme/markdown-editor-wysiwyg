@@ -5,6 +5,57 @@ import {
   markdownToHtml,
   restoreHtmlComments,
 } from "../markdown.js";
+import { inlineRoundTripCases } from "./fixtures/inlineRoundTripCases.js";
+
+async function roundTrip(md: string): Promise<string> {
+  const html = await markdownToHtml(md);
+  return (await htmlToMarkdown(html)).trim();
+}
+
+function assertRoundTripInvariants(result: string, caseName: string): void {
+  // Round-trip markdown is normalized by design, so we assert behavioral
+  // invariants rather than strict string identity.
+  assert.ok(
+    !/&#x[0-9a-f]+;/i.test(result),
+    `${caseName}: should not emit numeric hex entities`,
+  );
+  assert.ok(
+    !result.includes("\\***\\*"),
+    `${caseName}: should not emit escaped emphasis storm pattern`,
+  );
+}
+
+function buildGeneratedInlineCases(): Array<{
+  name: string;
+  input: string;
+  mustContain: string[];
+}> {
+  const wrappers = [
+    { name: "underscore", open: "_", close: "_" },
+    { name: "asterisk", open: "*", close: "*" },
+  ];
+  const spaces = [
+    { name: "ascii-space", value: " " },
+    { name: "nbsp", value: "\u00A0" },
+    { name: "tab", value: "\t" },
+  ];
+  const out: Array<{ name: string; input: string; mustContain: string[] }> = [];
+
+  for (const wrapper of wrappers) {
+    for (const space of spaces) {
+      out.push({
+        name: `${wrapper.name}-${space.name}`,
+        input:
+          `${wrapper.open}alpha${space.value}` +
+          `[doc](https://example.com/docs)` +
+          `${space.value}**Bold Label**.${wrapper.close}`,
+        mustContain: ["[doc](https://example.com/docs)", "**Bold Label**"],
+      });
+    }
+  }
+
+  return out;
+}
 
 suite("markdownToHtml", () => {
   test("headings", async () => {
@@ -184,11 +235,6 @@ suite("htmlToMarkdown", () => {
 });
 
 suite("GFM round-trip", () => {
-  async function roundTrip(md: string): Promise<string> {
-    const html = await markdownToHtml(md);
-    return (await htmlToMarkdown(html)).trim();
-  }
-
   test("strikethrough survives round-trip", async () => {
     assert.strictEqual(await roundTrip("~~gone~~"), "~~gone~~");
   });
@@ -212,6 +258,42 @@ suite("GFM round-trip", () => {
     // May come back as bare URL or angle-bracket autolink; both are valid GFM
     assert.match(result, /https:\/\/example\.com/);
   });
+});
+
+suite("GFM inline round-trip corpus", () => {
+  for (const testCase of inlineRoundTripCases) {
+    test(testCase.name, async () => {
+      const result = await roundTrip(testCase.input);
+      assertRoundTripInvariants(result, testCase.name);
+      for (const expected of testCase.mustContain ?? []) {
+        assert.ok(
+          result.includes(expected),
+          `${testCase.name}: missing "${expected}"`,
+        );
+      }
+      for (const forbidden of testCase.mustNotContain ?? []) {
+        assert.ok(
+          !result.includes(forbidden),
+          `${testCase.name}: contains forbidden "${forbidden}"`,
+        );
+      }
+    });
+  }
+});
+
+suite("GFM inline round-trip generated combinations", () => {
+  for (const generated of buildGeneratedInlineCases()) {
+    test(generated.name, async () => {
+      const result = await roundTrip(generated.input);
+      assertRoundTripInvariants(result, generated.name);
+      for (const expected of generated.mustContain) {
+        assert.ok(
+          result.includes(expected),
+          `${generated.name}: missing "${expected}"`,
+        );
+      }
+    });
+  }
 });
 
 suite("extractHtmlComments", () => {

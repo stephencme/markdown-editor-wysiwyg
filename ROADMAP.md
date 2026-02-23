@@ -1,10 +1,14 @@
 # Roadmap
 
-## Next up
+## Stories
 
-- TableKit-style table authoring UX in the editor (insert + edit controls)
+## Tasks
 
-## Notes
+- Improve table authoring UX with insert and edit controls
+- Save inserted images to the workspace filesystem and write relative markdown image paths instead of `data:` URLs
+- Support inserting images from remote URLs (preserve the remote link in markdown)
+- Reduce extension-host CPU pressure in markdown sync path (`htmlToMarkdownSync` on `UPDATE`)
 
-- Current image insertion uses in-document `data:` URLs (paste only) and does
-  not upload or persist image files to disk
+## Bugs
+
+- Investigate intermittent focus/scroll jump during rapid undo/redo in markdown editor sync path

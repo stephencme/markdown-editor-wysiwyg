@@ -1,5 +1,7 @@
 # Markdown Editor (WYSIWYG)
 
+[![Open VSX](https://img.shields.io/open-vsx/v/stephencme/markdown-editor-wysiwyg?label=Open%20VSX)](https://open-vsx.org/extension/stephencme/markdown-editor-wysiwyg) [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/stephencme.markdown-editor-wysiwyg?label=VS%20Code%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=stephencme.markdown-editor-wysiwyg)
+
 A clean, distraction-free editor for Markdown.
 
 Edit [GFM (GitHub Flavored Markdown)](https://github.github.com/gfm/) as rich text with all of the benefits of `.md` files – clean, readable, and source control-friendly.

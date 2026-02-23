@@ -118,7 +118,12 @@ const htmlToMarkdownProcessor = unified()
   .use(rehypeRemark)
   .use(remarkGfm)
   .use(remarkTightLists)
-  .use(remarkStringify, { bullet: "-" });
+  .use(remarkStringify, {
+    bullet: "-",
+    // Prefer asterisk emphasis to avoid underscore edge-cases that can
+    // introduce HTML entities and over-escaping around links/strong text.
+    emphasis: "*",
+  });
 
 // Matches a leading block of HTML comments (with optional blank lines between)
 // <!-- --> is the only comment syntax in CommonMark/GFM

@@ -9,15 +9,32 @@ import { TableRow } from "@tiptap/extension-table/row";
 import { TaskItem } from "@tiptap/extension-task-item";
 import { TaskList } from "@tiptap/extension-task-list";
 import { Plugin } from "@tiptap/pm/state";
+import {
+  isHostToWebviewMessage,
+  isNewerSequence,
+  UPDATE_SOURCE,
+} from "../messageProtocol.js";
 import StarterKit from "@tiptap/starter-kit";
 import { ClipboardMarkdown } from "./clipboardMarkdown.js";
 import { FindExtension, bindFindBar } from "./find.js";
 import { bindImageInput } from "./imageInput.js";
 import { createNativeLinkShortcut, handleLinkMessage } from "./links.js";
+import { getRestorableSelection } from "./selectionRestore.js";
 
 const vscode = acquireVsCodeApi();
 
 let isSettingContent = false;
+let outgoingUpdateSequence = 0;
+let lastHostSequence = 0;
+const SYNC_DEBUG_SCOPE = "MarkdownWebviewSync";
+
+function logSync(action: string, details?: unknown): void {
+  if (details === undefined) {
+    console.log(`[${SYNC_DEBUG_SCOPE}:${action}]`);
+    return;
+  }
+  console.log(`[${SYNC_DEBUG_SCOPE}:${action}]`, details);
+}
 
 const editor = new Editor({
   element: document.getElementById("editor")!,
@@ -77,11 +94,26 @@ const editor = new Editor({
   ],
   onUpdate({ editor }) {
     if (isSettingContent) return;
+    outgoingUpdateSequence += 1;
     // Restore data-href to href so the markdown converter recognizes links
     const html = editor
       .getHTML()
       .replace(/(<a\b[^>]*?) data-href=/g, "$1 href=");
-    vscode.postMessage({ type: "UPDATE", html });
+    vscode.postMessage({
+      type: "UPDATE",
+      html,
+      sequence: outgoingUpdateSequence,
+      source: UPDATE_SOURCE.WEBVIEW_EDIT,
+    });
+    logSync("onUpdate:sentUpdate", {
+      sequence: outgoingUpdateSequence,
+      selection: {
+        from: editor.state.selection.from,
+        to: editor.state.selection.to,
+      },
+      docSize: editor.state.doc.content.size,
+      htmlLength: html.length,
+    });
   },
 });
 
@@ -90,9 +122,15 @@ bindImageInput(editor);
 
 window.addEventListener("message", (event) => {
   const message = event.data;
+  if (!isHostToWebviewMessage(message)) return;
+
   if (message.type === "SET_CONTENT") {
+    if (!isNewerSequence(message.sequence, lastHostSequence)) return;
+    lastHostSequence = message.sequence;
+
     const wasEditorFocused = editor.isFocused;
     const previousSelection = editor.state.selection;
+    const previousDocSize = editor.state.doc.content.size;
     isSettingContent = true;
     editor
       .chain()
@@ -102,16 +140,63 @@ window.addEventListener("message", (event) => {
     isSettingContent = false;
 
     const maxPosition = editor.state.doc.content.size;
-    const nextFrom = Math.min(Math.max(previousSelection.from, 0), maxPosition);
-    const nextTo = Math.min(Math.max(previousSelection.to, 0), maxPosition);
-
-    try {
-      editor.commands.setTextSelection({ from: nextFrom, to: nextTo });
-    } catch {
-      // Some document shapes do not allow restoring the previous text range
+    const selectionToRestore = getRestorableSelection(
+      {
+        from: previousSelection.from,
+        to: previousSelection.to,
+      },
+      maxPosition,
+    );
+    if (selectionToRestore) {
+      try {
+        editor.commands.setTextSelection(selectionToRestore);
+        logSync("setContent:restoredSelection", {
+          sequence: message.sequence,
+          source: message.source,
+          wasEditorFocused,
+          previousSelection: {
+            from: previousSelection.from,
+            to: previousSelection.to,
+          },
+          previousDocSize,
+          nextDocSize: maxPosition,
+          restoredSelection: selectionToRestore,
+        });
+      } catch {
+        // Some document shapes do not allow restoring the previous text range
+        logSync("setContent:restoreSelectionFailed", {
+          sequence: message.sequence,
+          source: message.source,
+          previousSelection: {
+            from: previousSelection.from,
+            to: previousSelection.to,
+          },
+          previousDocSize,
+          nextDocSize: maxPosition,
+        });
+      }
+    } else {
+      logSync("setContent:skippedSelectionRestore", {
+        sequence: message.sequence,
+        source: message.source,
+        previousSelection: {
+          from: previousSelection.from,
+          to: previousSelection.to,
+        },
+        previousDocSize,
+        nextDocSize: maxPosition,
+      });
     }
+
     if (wasEditorFocused) {
-      editor.commands.focus();
+      editor.commands.focus(null, { scrollIntoView: false });
+      logSync("setContent:refocused", {
+        sequence: message.sequence,
+        selectionAfter: {
+          from: editor.state.selection.from,
+          to: editor.state.selection.to,
+        },
+      });
     }
     return;
   }

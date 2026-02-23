@@ -4,6 +4,16 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## \[Unreleased]
 
+## \[0.4.0] - 2026-02-23
+
+### Changed
+
+- Refactored markdown document sync into a dedicated coordinator with typed host/webview message protocol, sequence guards, and additional sync diagnostics
+
+### Known issues
+
+- Rapid undo/redo sequences can still trigger intermittent focus/scroll jumps while sync equivalence is being hardened
+
 ## \[0.3.1] - 2026-02-20
 
 ### Changed

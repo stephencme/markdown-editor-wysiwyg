@@ -1,6 +1,6 @@
-<!-- Last updated by AI: 2026-02-20 -->
+<!-- Last updated by AI: 2026-02-23 -->
 
-# markdown-editor-wysiwyg
+# pangolin/vscode
 
 VS Code extension. Bundled with esbuild, tested with `@vscode/test-cli`. To use VS Code debugger tools, this extension must support being opened as its own workspace i.e. `cd pangolin/vscode` then `code .`
 
@@ -8,12 +8,39 @@ VS Code extension. Bundled with esbuild, tested with `@vscode/test-cli`. To use 
 
 - `src/extension.ts` – entry point (`activate`/`deactivate`); sets `workbench.editorAssociations` on startup so `.md` defaults to the custom editor while respecting user overrides, and keeps diff/source-control markdown views on the built-in text editor
 - `package.json` – uses `priority: "option"` with `onStartupFinished` so user overrides to `editorAssociations` do not activate the extension on every `.md` open
-- `src/markdownEditorProvider.ts` – `CustomTextEditorProvider` for `.md`; Tiptap owns editing/undo, and document writes are debounced (with a save-time flush via `onWillSaveTextDocument`)
+- `src/markdownEditorProvider.ts` – `CustomTextEditorProvider` for `.md`; provider wiring + webview bootstrap only
+- `src/documentSync.ts` – sync coordinator for markdown document <-> webview state (debounced write-back, save-time flush, echo suppression, sequence guards, and source-aware message handling)
+- `src/messageProtocol.ts` – typed host/webview protocol with source tags and monotonic sequence utilities
 - `src/markdown.ts` – unified-based markdown <-> HTML conversion; `remarkTightLists` enforces tight lists, and `extractHtmlComments`/`restoreHtmlComments` preserve leading `<!-- -->` comments that Tiptap drops
 - `src/images.ts` – rewrites relative image paths to webview-safe URIs and restores them on write-back
-- `src/webview/editor.ts` – Tiptap editor running in the webview; link `href` is stored in `data-href` to avoid built-in interception, and `Code.extend({ excludes: "" })` allows code + link marks together
+- `src/webview/editor.ts` – Tiptap editor running in the webview; link `href` is stored in `data-href` to avoid built-in interception, `Code.extend({ excludes: "" })` allows code + link marks together, and `SET_CONTENT` selection restore is guarded to avoid undo/redo cursor jumps
 - `src/webview/find.ts` – find-in-editor behavior (plugin, keybinding, DOM bindings)
 - `node_modules/@types/vscode/index.d.ts` – Full VS Code API typings
+
+### Sync control pattern
+
+Ownership boundaries:
+
+- Webview owns editor UI state and local interaction intent
+- Extension host owns persisted markdown state and sync arbitration
+- Typed protocol defines message shape and provenance (`source`); runtime guards in host/webview enforce ordering (`sequence`)
+
+```mermaid
+flowchart LR
+  userInput[UserInputInWebview] --> webviewEditor[WebviewEditor]
+  webviewEditor --> updateMsg[UPDATE sequence source]
+  updateMsg --> syncCoordinator[DocumentSyncInExtensionHost]
+  syncCoordinator --> textDocument[VSCodeTextDocument]
+  textDocument --> docChanged[onDidChangeTextDocument]
+  docChanged --> syncCoordinator
+  syncCoordinator -->|"external-change only"| setContentMsg[SET_CONTENT sequence source]
+  setContentMsg --> webviewEditor
+```
+
+Current caveats:
+
+- External re-sync decisions are made in `DocumentSync.handleDidChange` using canonical markdown equivalence and expected-apply echo suppression queue; this remains the primary area for undo/redo race debugging
+- `DocumentSync.handleWebviewMessage` uses `htmlToMarkdownSync` on each `UPDATE` to keep canonical baseline fresh; this improves race handling but can add extension-host CPU pressure during rapid typing/undo bursts
 
 ### Markdown
 
@@ -58,8 +85,7 @@ Press `F5` to launch an Extension Development Host. The default build task start
 
 ## Testing
 
-- `pnpm test` runs `vscode-test`, which launches an Extension Development Host (real VS Code/Electron) to execute extension tests
-- In non-interactive or agent-driven environments, this can appear to never exit if the host stays open or cannot fully initialize
+- `pnpm test` runs `vscode-test`, which launches an Extension Development Host (real VS Code/Electron) to execute extension tests; DO NOT run in non-interactive or agent-driven environments
 - For quick CI-style checks, prefer `pnpm lint` and `pnpm check:types`; run `pnpm test` when a GUI-backed extension test run is available
 
 ## Packaging and publishing
