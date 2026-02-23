@@ -8,7 +8,14 @@ function insertImage(editor: Editor, src: string, alt?: string): void {
 async function fileToDataUrl(file: File): Promise<string> {
   return await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onload = () => {
+      const { result } = reader;
+      if (typeof result === "string") {
+        resolve(result);
+        return;
+      }
+      reject(new Error("File reader did not return a string data URL"));
+    };
     reader.onerror = () =>
       reject(reader.error ?? new Error("File read failed"));
     reader.readAsDataURL(file);

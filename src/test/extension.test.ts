@@ -2,10 +2,24 @@ import * as assert from "assert";
 import * as vscode from "vscode";
 
 suite("Extension Test Suite", () => {
-  vscode.window.showInformationMessage("Start all tests.");
+  const EXTENSION_ID = "stephencme.markdown-editor-wysiwyg";
+  const OPEN_BUILT_IN = "stephencme.markdownEditor.openWithBuiltInTextEditor";
+  const OPEN_MARKDOWN = "stephencme.markdownEditor.openWithMarkdownEditor";
 
-  test("Sample test", () => {
-    assert.strictEqual(-1, [1, 2, 3].indexOf(5));
-    assert.strictEqual(-1, [1, 2, 3].indexOf(0));
+  test("extension is discoverable in host", () => {
+    const extension = vscode.extensions.getExtension(EXTENSION_ID);
+    assert.ok(extension, "expected extension to be available");
+  });
+
+  test("commands are registered", async () => {
+    const commands = await vscode.commands.getCommands(true);
+    assert.ok(
+      commands.includes(OPEN_BUILT_IN),
+      "openWithBuiltInTextEditor should be registered",
+    );
+    assert.ok(
+      commands.includes(OPEN_MARKDOWN),
+      "openWithMarkdownEditor should be registered",
+    );
   });
 });

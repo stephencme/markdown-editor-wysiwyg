@@ -3,6 +3,16 @@ import { DOMSerializer } from "@tiptap/pm/model";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { htmlToMarkdownSync, markdownToHtmlSync } from "../markdown.js";
 
+function unwrapSingleParagraphHtml(html: string): string {
+  const document = new DOMParser().parseFromString(html, "text/html");
+  const { body } = document;
+  if (body.childNodes.length !== 1) return html;
+
+  const onlyChild = body.firstElementChild;
+  if (!(onlyChild instanceof HTMLParagraphElement)) return html;
+  return onlyChild.innerHTML;
+}
+
 export const ClipboardMarkdown = Extension.create({
   name: "clipboardMarkdown",
 
@@ -16,11 +26,7 @@ export const ClipboardMarkdown = Extension.create({
             if (!text) return false;
             // Inside a code block: let ProseMirror insert as plain text
             if (view.state.selection.$from.parent.type.spec.code) return false;
-            let html = markdownToHtmlSync(text);
-            // Unwrap single-paragraph output so content is inserted inline
-            // instead of splitting the current block
-            const match = html.match(/^<p>([\s\S]*)<\/p>\s*$/);
-            if (match) html = match[1];
+            const html = unwrapSingleParagraphHtml(markdownToHtmlSync(text));
             this.editor.commands.insertContent(html, {
               parseOptions: { preserveWhitespace: true },
             });

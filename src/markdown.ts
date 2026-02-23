@@ -7,10 +7,21 @@ import remarkRehype from "remark-rehype";
 import remarkStringify, {
   type Options as RemarkStringifyOptions,
 } from "remark-stringify";
+import {
+  getHastChildren,
+  getHastProperties,
+  isObjectRecord,
+  toHastNode,
+  type HastNode,
+} from "./ast/hast.js";
+import {
+  isInlineMarkNode,
+  maybeMergeSplitMarkIsland,
+  normalizeInlineMarkNode,
+  type MdastNode,
+} from "./ast/mdast.js";
 import type { Plugin } from "unified";
 import { unified } from "unified";
-
-type HastNode = Record<string, unknown>;
 
 function getNodeClasses(props: Record<string, unknown>): string[] {
   return Array.isArray(props.className) ? (props.className as string[]) : [];
@@ -18,7 +29,7 @@ function getNodeClasses(props: Record<string, unknown>): string[] {
 
 function isCheckboxInputNode(node: HastNode): boolean {
   if (node.tagName !== "input") return false;
-  const props = (node.properties ?? {}) as Record<string, unknown>;
+  const props = getHastProperties(node);
   return props.type === "checkbox";
 }
 
@@ -59,7 +70,7 @@ function parseEmptyTaskMarkerFromChildren(
 
 function isTaskListItemNode(node: HastNode): boolean {
   if (node.tagName !== "li") return false;
-  const props = (node.properties ?? {}) as Record<string, unknown>;
+  const props = getHastProperties(node);
   const classes = getNodeClasses(props);
   if (classes.includes("task-list-item")) return true;
   const children = Array.isArray(node.children)
@@ -75,16 +86,16 @@ function isTaskListItemNode(node: HastNode): boolean {
 //             with <input type="checkbox" [checked] disabled> as first child
 //   Tiptap:   <ul data-type="taskList"> / <li data-type="taskItem" data-checked>
 const rehypeGfmToTiptap: Plugin = () => (tree) => {
-  const stack: HastNode[] = [tree as unknown as HastNode];
+  const root = toHastNode(tree);
+  if (!root) return;
+  const stack: HastNode[] = [root];
   while (stack.length) {
     const node = stack.pop()!;
-    const props = (node.properties ?? {}) as Record<string, unknown>;
+    const props = getHastProperties(node);
     const classes = getNodeClasses(props);
 
     if (node.tagName === "ul") {
-      const children = Array.isArray(node.children)
-        ? (node.children as HastNode[])
-        : [];
+      const children = getHastChildren(node);
       const hasTaskItemChild = children.some((child) =>
         isTaskListItemNode(child),
       );
@@ -97,13 +108,13 @@ const rehypeGfmToTiptap: Plugin = () => (tree) => {
     }
 
     if (isTaskListItemNode(node)) {
-      const children = (node.children ?? []) as HastNode[];
+      const children = getHastChildren(node);
       let checked = false;
       let sawCheckbox = false;
       const remaining: HastNode[] = [];
       const emptyTaskMarkerChecked = parseEmptyTaskMarkerFromChildren(children);
       for (const child of children) {
-        const childProps = (child.properties ?? {}) as Record<string, unknown>;
+        const childProps = getHastProperties(child);
         if (isCheckboxInputNode(child)) {
           sawCheckbox = true;
           checked =
@@ -124,10 +135,7 @@ const rehypeGfmToTiptap: Plugin = () => (tree) => {
       node.children = remaining;
     }
 
-    const children = node.children;
-    if (Array.isArray(children)) {
-      for (const child of children) stack.push(child as HastNode);
-    }
+    for (const child of getHastChildren(node)) stack.push(child);
   }
 };
 
@@ -137,10 +145,12 @@ const rehypeGfmToTiptap: Plugin = () => (tree) => {
 //   Standard: <ul class="contains-task-list"> / <li class="task-list-item">
 //             with <input type="checkbox" [checked] disabled> as first child text
 const rehypeNormalizeTiptap: Plugin = () => (tree) => {
-  const stack: HastNode[] = [tree as unknown as HastNode];
+  const root = toHastNode(tree);
+  if (!root) return;
+  const stack: HastNode[] = [root];
   while (stack.length) {
     const node = stack.pop()!;
-    const props = (node.properties ?? {}) as Record<string, unknown>;
+    const props = getHastProperties(node);
 
     if (node.tagName === "ul" && props.dataType === "taskList") {
       props.className = ["contains-task-list"];
@@ -154,14 +164,14 @@ const rehypeNormalizeTiptap: Plugin = () => (tree) => {
       delete props.dataChecked;
       // Replace Tiptap's <label>...<div><p>text</p></div> with
       // <input type="checkbox" disabled [checked]> text
-      const children = node.children as HastNode[];
+      const children = getHastChildren(node);
       const inlineChildren: HastNode[] = [];
       for (const child of children) {
         if (child.tagName === "div" || child.tagName === "p") {
-          const nested = (child.children ?? []) as HastNode[];
+          const nested = getHastChildren(child);
           for (const n of nested) {
             if (n.tagName === "p") {
-              inlineChildren.push(...((n.children ?? []) as HastNode[]));
+              inlineChildren.push(...getHastChildren(n));
             } else {
               inlineChildren.push(n);
             }
@@ -184,34 +194,30 @@ const rehypeNormalizeTiptap: Plugin = () => (tree) => {
       node.children = [checkbox, space, ...inlineChildren];
     }
 
-    const children = node.children;
-    if (Array.isArray(children)) {
-      for (const child of children) stack.push(child as HastNode);
-    }
+    for (const child of getHastChildren(node)) stack.push(child);
   }
 };
 
 // Convert editor-specific link attributes back to standard HTML before
 // any HTML-to-markdown conversion path
 const rehypeRestoreEditorLinks: Plugin = () => (tree) => {
-  const stack: HastNode[] = [tree as unknown as HastNode];
+  const root = toHastNode(tree);
+  if (!root) return;
+  const stack: HastNode[] = [root];
   while (stack.length) {
     const node = stack.pop()!;
-    const props = (node.properties ?? {}) as Record<string, unknown>;
+    const props = getHastProperties(node);
 
     if (node.tagName === "a" && typeof props.dataHref === "string") {
       props.href = props.dataHref;
       delete props.dataHref;
     }
 
-    const children = node.children;
-    if (Array.isArray(children)) {
-      for (const child of children) stack.push(child as HastNode);
-    }
+    for (const child of getHastChildren(node)) stack.push(child);
   }
 };
 
-type MdastNode = Record<string, unknown>;
+type MdastParentNode = MdastNode & { children?: MdastNode[] };
 type RemarkListItemHandler = NonNullable<
   NonNullable<RemarkStringifyOptions["handlers"]>["listItem"]
 >;
@@ -231,6 +237,14 @@ type MarkdownState = {
   ) => string;
   containerFlow: (node: MdastNode, info: MarkdownInfo) => string;
 };
+
+function asMarkdownState(state: unknown): MarkdownState {
+  return state as MarkdownState;
+}
+
+function asMarkdownInfo(info: unknown): MarkdownInfo {
+  return info as MarkdownInfo;
+}
 
 function checkBullet(state: MarkdownState): "*" | "+" | "-" {
   const marker = (state.options.bullet as string | undefined) ?? "*";
@@ -314,8 +328,8 @@ const listItemToMarkdown: RemarkListItemHandler = (
     return defaultListItemToMarkdown(
       listItemNode,
       listParent,
-      state as unknown as MarkdownState,
-      info as unknown as MarkdownInfo,
+      asMarkdownState(state),
+      asMarkdownInfo(info),
     );
   }
 
@@ -332,8 +346,8 @@ const listItemToMarkdown: RemarkListItemHandler = (
   const value = defaultListItemToMarkdown(
     normalizedNode,
     listParent,
-    state as unknown as MarkdownState,
-    info as unknown as MarkdownInfo,
+    asMarkdownState(state),
+    asMarkdownInfo(info),
   );
   const marker = value.match(LIST_MARKER_RE)?.[0];
   if (!marker) return value;
@@ -362,7 +376,9 @@ const listItemToMarkdown: RemarkListItemHandler = (
 const remarkTightLists: Plugin = () => (tree) => {
   const stack: unknown[] = [tree];
   while (stack.length) {
-    const node = stack.pop() as Record<string, unknown>;
+    const next = stack.pop();
+    if (!isObjectRecord(next)) continue;
+    const node = next;
     if (node.type === "list" || node.type === "listItem") {
       node.spread = false;
     }
@@ -370,6 +386,70 @@ const remarkTightLists: Plugin = () => (tree) => {
     if (Array.isArray(children)) {
       for (const child of children) stack.push(child);
     }
+  }
+};
+
+// Tiptap frequently emits adjacent inline marks for one visual span
+// (for example many neighboring <em> nodes around links/strong text)
+// which can stringify into entity-escaped spaces and escaped marker storms;
+// merge adjacent identical marks so markdown stays stable on save
+const remarkNormalizeInlineMarks: Plugin = () => (tree) => {
+  const stack: unknown[] = [tree];
+  while (stack.length) {
+    const next = stack.pop();
+    if (!isObjectRecord(next)) continue;
+    const node = next as MdastParentNode;
+    const children = node.children;
+    if (!Array.isArray(children)) continue;
+
+    for (const child of children) stack.push(child);
+
+    let nextChildren = children.map((child) => normalizeInlineMarkNode(child));
+
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (let index = 0; index < nextChildren.length - 2; index += 1) {
+        const merged = maybeMergeSplitMarkIsland(
+          nextChildren[index],
+          nextChildren[index + 1],
+          nextChildren[index + 2],
+        );
+        if (!merged) continue;
+        nextChildren = [
+          ...nextChildren.slice(0, index),
+          merged,
+          ...nextChildren.slice(index + 3),
+        ];
+        changed = true;
+        break;
+      }
+    }
+
+    const normalizedChildren: MdastNode[] = [];
+    for (const child of nextChildren) {
+      const normalizedChild = normalizeInlineMarkNode(child);
+      if (!isInlineMarkNode(normalizedChild)) {
+        normalizedChildren.push(normalizedChild);
+        continue;
+      }
+
+      const previous = normalizedChildren[normalizedChildren.length - 1];
+      if (previous && String(previous.type) === String(normalizedChild.type)) {
+        const previousChildren = Array.isArray(previous.children)
+          ? (previous.children as MdastNode[])
+          : [];
+        const nextChildren = Array.isArray(normalizedChild.children)
+          ? (normalizedChild.children as MdastNode[])
+          : [];
+        previous.children = [...previousChildren, ...nextChildren];
+        continue;
+      }
+
+      normalizedChildren.push(normalizedChild);
+    }
+
+    node.children = normalizedChildren;
   }
 };
 
@@ -387,6 +467,7 @@ const htmlToMarkdownProcessor = unified()
   .use(rehypeRemark)
   .use(remarkGfm)
   .use(remarkTightLists)
+  .use(remarkNormalizeInlineMarks)
   .use(remarkStringify, {
     bullet: "-",
     // Prefer asterisk emphasis to avoid underscore edge-cases that can

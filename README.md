@@ -18,7 +18,7 @@ Right-click any `.md` file in the Files Explorer and choose **Open with...** >
 
 The **Open with Built-in Text Editor** and **Open with Markdown Editor (WYSIWYG)** commands are available from the tab bar and Command Palette.
 
-_Note that in Cursor 2.1+, editor action icons are [hidden by default](https://forum.cursor.com/t/editor-actions-icons-disappeared-in-2-1-0-version/143207). To show them, click on the three dots in the editor tab bar menu and select **Configure Icon Visibility** for each command._
+_Note that in Cursor 2.1+, editor action icons are [hidden by default](https://forum.cursor.com/t/editor-actions-icons-disappeared-in-2-1-0-version/143207). To show them, click on the three dots in the editor tab bar menu and select **Configure Icon Visibility** for each command._
 
 #### Open with Built-in Text Editor
 

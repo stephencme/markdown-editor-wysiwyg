@@ -14,6 +14,7 @@ import {
   isNewerSequence,
   UPDATE_SOURCE,
 } from "../messageProtocol.js";
+import { isAllowedLinkHref } from "../linkValidation.js";
 import StarterKit from "@tiptap/starter-kit";
 import { ClipboardMarkdown } from "./clipboardMarkdown.js";
 import { FindExtension, bindFindBar } from "./find.js";
@@ -36,25 +37,26 @@ function logSync(action: string, details?: unknown): void {
   console.log(`[${SYNC_DEBUG_SCOPE}:${action}]`, details);
 }
 
+function requireEditorElement(): HTMLElement {
+  const element = document.getElementById("editor");
+  if (!(element instanceof HTMLElement)) {
+    throw new Error("[MarkdownWebview:init] missing #editor element");
+  }
+  return element;
+}
+
 const editor = new Editor({
-  element: document.getElementById("editor")!,
+  element: requireEditorElement(),
   extensions: [
     StarterKit.configure({ code: false }),
     // Allow code + link marks to coexist (default Code excludes all marks)
     Code.extend({ excludes: "" }),
-    Image.configure({ inline: true }).extend({ marks: "link" }),
+    Image.configure({ inline: true, allowBase64: true }).extend({
+      marks: "link",
+    }),
     Link.configure({
       openOnClick: false,
-      isAllowedUri: (url) => {
-        try {
-          // Base URL prevents throwing on relative paths and fragments
-          const protocol = new URL(url, "https://_").protocol.replace(":", "");
-          // Block dangerous protocols like javascript:
-          return ["https", "http", "mailto", "tel"].includes(protocol);
-        } catch {
-          return false;
-        }
-      },
+      isAllowedUri: (url) => isAllowedLinkHref(url),
     }).extend({
       // Store href in data-href to prevent the webview's built-in link
       // interception from firing alongside our click handler

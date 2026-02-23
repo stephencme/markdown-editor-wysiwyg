@@ -4,6 +4,14 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## \[Unreleased]
 
+## \[0.6.0] - 2026-02-23
+
+### Changed
+
+- Hardened markdown round-trip behavior by replacing fragile regex transforms with AST-based normalization and stronger type-safe helpers
+- Improved host/webview sync resilience with stricter sequence handling, better echo suppression, and added race-path regression coverage
+- Fixed image handling for data URLs and webview URI restoration so pasted and embedded images preserve expected behavior
+
 ## \[0.5.0] - 2026-02-23
 
 ### Changed

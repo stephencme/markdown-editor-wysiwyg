@@ -33,6 +33,7 @@ function buildGeneratedInlineCases(): Array<{
   const wrappers = [
     { name: "underscore", open: "_", close: "_" },
     { name: "asterisk", open: "*", close: "*" },
+    { name: "strikethrough", open: "~~", close: "~~" },
   ];
   const spaces = [
     { name: "ascii-space", value: " " },
@@ -212,6 +213,66 @@ suite("htmlToMarkdown", () => {
     assert.strictEqual(md.trim(), "**bold** and *italic*");
   });
 
+  test("adjacent fragmented emphasis nodes normalize cleanly", async () => {
+    const html =
+      "<p>" +
+      "<em>Note that in Cursor 2.1+, editor action icons are </em>" +
+      '<em><a href="https://forum.cursor.com/t/editor-actions-icons-disappeared-in-2-1-0-version/143207">hidden by default</a></em>' +
+      "<em>. To show them, click on the three dots in the editor tab bar menu and select </em>" +
+      "<em><strong>Configure Icon Visibility</strong></em>" +
+      "<em>&nbsp;for each command.</em>" +
+      "</p>";
+    const md = await htmlToMarkdown(html);
+    assert.ok(
+      !md.includes("&#x20;"),
+      "should not include space entity escapes",
+    );
+    assert.ok(!md.includes("&#xA0;"), "should not include nbsp entity escapes");
+    assert.ok(
+      !md.includes("\\***\\*"),
+      "should not include escaped emphasis storms",
+    );
+    assert.ok(
+      md.includes(
+        "[hidden by default](https://forum.cursor.com/t/editor-actions-icons-disappeared-in-2-1-0-version/143207)",
+      ),
+      "should keep link markdown",
+    );
+    assert.ok(
+      md.includes("**Configure Icon Visibility**"),
+      "should keep nested strong markdown",
+    );
+  });
+
+  test("space entities normalize to literal spaces", async () => {
+    const html =
+      "<p>" +
+      "<em>Note that in Cursor 2.1+, editor action icons are </em>" +
+      '<a href="https://forum.cursor.com/t/editor-actions-icons-disappeared-in-2-1-0-version/143207"><em>hidden by default</em></a>' +
+      "<em>. To show them, click on the three dots in the editor tab bar menu and select </em>" +
+      "<strong><strong>Configure Icon Visibility</strong></strong>" +
+      "<em> for each command.</em>" +
+      "</p>";
+    const md = await htmlToMarkdown(html);
+    assert.ok(!md.includes("&#x20;"), "should not emit plain-space entities");
+    assert.ok(!md.includes("&#xA0;"), "should not emit nbsp entities");
+    assert.ok(
+      md.includes(" are "),
+      "should preserve regular spaces as literal spaces",
+    );
+    assert.ok(
+      !md.includes("&#x20;"),
+      "should not emit numeric space entities in split-mark cases",
+    );
+  });
+
+  test("intentional escaped entities are preserved", async () => {
+    const html = "<p><code>&amp;#x20;</code> <code>&amp;#xA0;</code></p>";
+    const md = await htmlToMarkdown(html);
+    assert.match(md, /`&#x20;`/);
+    assert.match(md, /`&#xA0;`/);
+  });
+
   test("strikethrough", async () => {
     const md = await htmlToMarkdown("<p><del>removed</del></p>");
     assert.strictEqual(md.trim(), "~~removed~~");
@@ -314,6 +375,22 @@ suite("GFM round-trip", () => {
     assert.strictEqual(await roundTrip("~~gone~~"), "~~gone~~");
   });
 
+  test("split strikethrough around link normalizes", async () => {
+    const input = "~~See [doc](https://example.com/docs) now~~";
+    const once = await roundTrip(input);
+    const twice = await roundTrip(once);
+    assert.ok(once.includes("[doc](https://example.com/docs)"));
+    assert.strictEqual(twice, once);
+  });
+
+  test("strikethrough with nested strong stays stable", async () => {
+    const input = "~~left **bold** right~~";
+    const once = await roundTrip(input);
+    const twice = await roundTrip(once);
+    assert.ok(once.includes("**bold**"));
+    assert.strictEqual(twice, once);
+  });
+
   test("table survives round-trip", async () => {
     const input = "| A | B |\n| --- | --- |\n| 1 | 2 |";
     const result = await roundTrip(input);
@@ -332,6 +409,14 @@ suite("GFM round-trip", () => {
     const result = await roundTrip("https://example.com");
     // May come back as bare URL or angle-bracket autolink; both are valid GFM
     assert.match(result, /https:\/\/example\.com/);
+  });
+
+  test("normalization is idempotent for split inline marks", async () => {
+    const input =
+      "_Note that in Cursor 2.1+, editor action icons are [hidden by default](https://forum.cursor.com/t/editor-actions-icons-disappeared-in-2-1-0-version/143207). To show them, click on the three dots in the editor tab bar menu and select **Configure Icon Visibility** for each command._";
+    const once = await roundTrip(input);
+    const twice = await roundTrip(once);
+    assert.strictEqual(twice, once);
   });
 });
 

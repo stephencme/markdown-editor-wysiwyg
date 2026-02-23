@@ -15,9 +15,9 @@ import {
   UPDATE_SOURCE,
   WebviewToHostMessage,
 } from "./messageProtocol.js";
+import { hasExplicitScheme, isAllowedLinkHref } from "./linkValidation.js";
 
 const DEBOUNCE_MS = 300;
-const ALLOWED_LINK_PROTOCOLS = new Set(["https", "http", "mailto", "tel"]);
 const SYNC_DEBUG_SCOPE = "MarkdownHostSync";
 
 type DocumentSyncState = {
@@ -36,17 +36,9 @@ type DocumentSyncState = {
 type SetContentMessage = Extract<HostToWebviewMessage, { type: "SET_CONTENT" }>;
 
 function validateLinkHref(input: string): string | null {
-  const href = input.trim();
-  if (!href) return "Link URL is required";
-
-  try {
-    // Base URL keeps relative paths/fragments parseable like in webview link rules
-    const protocol = new URL(href, "https://_").protocol.replace(":", "");
-    if (ALLOWED_LINK_PROTOCOLS.has(protocol)) return null;
-    return "Only http, https, mailto, and tel links are allowed";
-  } catch {
-    return "Enter a valid link URL";
-  }
+  if (!input.trim()) return "Link URL is required";
+  if (isAllowedLinkHref(input)) return null;
+  return "Only http, https, mailto, and tel links are allowed";
 }
 
 export function shouldAcceptSequence(
@@ -73,6 +65,9 @@ export function enqueueExpectedApplyCanonical(
   canonical: string,
   maxSize = 20,
 ): string[] {
+  if (!Number.isInteger(maxSize) || maxSize < 1) {
+    throw new Error("maxSize must be a positive integer");
+  }
   const next = [...canonicals, canonical];
   if (next.length <= maxSize) return next;
   return next.slice(next.length - maxSize);
@@ -294,7 +289,7 @@ export class DocumentSync implements vscode.Disposable {
     message: Extract<WebviewToHostMessage, { type: "OPEN_LINK" }>,
   ) {
     const href = message.href;
-    if (/^[a-z][a-z0-9+.-]*:/i.test(href)) {
+    if (hasExplicitScheme(href)) {
       vscode.env.openExternal(vscode.Uri.parse(href));
     } else {
       const docDir = vscode.Uri.joinPath(this.document.uri, "..");

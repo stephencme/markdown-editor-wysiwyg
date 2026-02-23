@@ -1,13 +1,14 @@
 import { Editor, Extension } from "@tiptap/core";
+import {
+  isHostToWebviewMessage,
+  type HostToWebviewMessage,
+} from "../messageProtocol.js";
 
 interface VsCodeApi {
   postMessage(message: unknown): void;
 }
 
-interface LinkPayload {
-  href?: string;
-  text?: string;
-}
+type ApplyLinkPayload = Extract<HostToWebviewMessage, { type: "APPLY_LINK" }>;
 
 function getSelectionText(editor: Editor): string {
   const { from, to } = editor.state.selection;
@@ -25,8 +26,8 @@ function requestLinkFromHost(editor: Editor, vscode: VsCodeApi): void {
   });
 }
 
-function applyLink(editor: Editor, payload: LinkPayload): void {
-  const href = payload.href?.trim();
+function applyLink(editor: Editor, payload: ApplyLinkPayload): void {
+  const href = payload.href.trim();
   if (!href) return;
 
   const { from, to } = editor.state.selection;
@@ -76,10 +77,8 @@ function createNativeLinkShortcut(vscode: VsCodeApi): Extension {
 }
 
 function handleLinkMessage(editor: Editor, message: unknown): void {
-  if (!message || typeof message !== "object") return;
-  const payload = message as { type?: string; href?: string; text?: string };
-  if (payload.type !== "APPLY_LINK") return;
-  applyLink(editor, payload);
+  if (!isHostToWebviewMessage(message) || message.type !== "APPLY_LINK") return;
+  applyLink(editor, message);
 }
 
 export { createNativeLinkShortcut, handleLinkMessage };

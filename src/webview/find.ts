@@ -14,6 +14,26 @@ interface FindState {
   currentIndex: number;
 }
 
+type FindMeta =
+  | { type: "SET_QUERY"; query: string }
+  | { type: "NAVIGATE"; delta: number };
+
+const DEFAULT_FIND_STATE: FindState = { query: "", matches: [], currentIndex: 0 };
+
+function isFindMeta(value: unknown): value is FindMeta {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const meta = value as { type?: unknown; query?: unknown; delta?: unknown };
+  if (meta.type === "SET_QUERY") return typeof meta.query === "string";
+  if (meta.type === "NAVIGATE") return typeof meta.delta === "number";
+  return false;
+}
+
+function getFindState(
+  editorState: Editor["state"],
+): FindState {
+  return findPluginKey.getState(editorState) ?? DEFAULT_FIND_STATE;
+}
+
 function findMatches(doc: ProseMirrorNode, query: string): FindMatch[] {
   if (!query) return [];
   const results: FindMatch[] = [];
@@ -37,10 +57,8 @@ const findPlugin = new Plugin<FindState>({
   state: {
     init: () => ({ query: "", matches: [], currentIndex: 0 }),
     apply(tr, state) {
-      const meta = tr.getMeta(findPluginKey) as
-        | { type: "SET_QUERY"; query: string }
-        | { type: "NAVIGATE"; delta: number }
-        | undefined;
+      const rawMeta = tr.getMeta(findPluginKey);
+      const meta = isFindMeta(rawMeta) ? rawMeta : undefined;
       if (meta?.type === "SET_QUERY") {
         return {
           query: meta.query,
@@ -65,8 +83,7 @@ const findPlugin = new Plugin<FindState>({
   },
   props: {
     decorations(editorState) {
-      const { query, matches, currentIndex } =
-        findPluginKey.getState(editorState)!;
+      const { query, matches, currentIndex } = getFindState(editorState);
       if (!query || !matches.length) return DecorationSet.empty;
       return DecorationSet.create(
         editorState.doc,
@@ -100,9 +117,33 @@ const FindExtension = Extension.create({
   },
 });
 
-const findBar = document.getElementById("find-bar")!;
-const findInput = document.getElementById("find-input") as HTMLInputElement;
-const findClose = document.getElementById("find-close") as HTMLButtonElement;
+function requireFindBar(): HTMLElement {
+  const element = document.getElementById("find-bar");
+  if (!(element instanceof HTMLElement)) {
+    throw new Error("[FindUI:init] missing #find-bar element");
+  }
+  return element;
+}
+
+function requireFindInput(): HTMLInputElement {
+  const element = document.getElementById("find-input");
+  if (!(element instanceof HTMLInputElement)) {
+    throw new Error("[FindUI:init] missing #find-input element");
+  }
+  return element;
+}
+
+function requireFindClose(): HTMLButtonElement {
+  const element = document.getElementById("find-close");
+  if (!(element instanceof HTMLButtonElement)) {
+    throw new Error("[FindUI:init] missing #find-close element");
+  }
+  return element;
+}
+
+const findBar = requireFindBar();
+const findInput = requireFindInput();
+const findClose = requireFindClose();
 
 function closeFindBar(editor: Editor) {
   editor.view.dispatch(
@@ -118,7 +159,7 @@ function bindFindBar(editor: Editor) {
     editor.view.dispatch(
       editor.state.tr.setMeta(findPluginKey, { type: "SET_QUERY", query }),
     );
-    const { matches } = findPluginKey.getState(editor.state)!;
+    const { matches } = getFindState(editor.state);
     if (matches.length > 0) {
       editor.view.dispatch(
         editor.state.tr
@@ -136,14 +177,14 @@ function bindFindBar(editor: Editor) {
 
   findInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
-      const state = findPluginKey.getState(editor.state)!;
+      const state = getFindState(editor.state);
       if (!state.matches.length) return;
       const delta = e.shiftKey ? -1 : 1;
       editor.view.dispatch(
         editor.state.tr.setMeta(findPluginKey, { type: "NAVIGATE", delta }),
       );
       // Read the updated index from plugin state after dispatch
-      const { currentIndex, matches } = findPluginKey.getState(editor.state)!;
+      const { currentIndex, matches } = getFindState(editor.state);
       const match = matches[currentIndex];
       editor.view.dispatch(
         editor.state.tr.setSelection(

@@ -33,7 +33,11 @@ export type HostToWebviewMessage =
   | { type: "APPLY_LINK"; href: string; text?: string };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isSafeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value);
 }
 
 function isUpdateSource(value: unknown): value is UpdateSource {
@@ -56,7 +60,8 @@ export function isWebviewToHostMessage(
     case "UPDATE":
       return (
         typeof message.html === "string" &&
-        typeof message.sequence === "number" &&
+        isSafeInteger(message.sequence) &&
+        message.sequence > 0 &&
         message.source === UPDATE_SOURCE.WEBVIEW_EDIT
       );
     case "OPEN_LINK":
@@ -81,7 +86,8 @@ export function isHostToWebviewMessage(
     case "SET_CONTENT":
       return (
         typeof message.html === "string" &&
-        typeof message.sequence === "number" &&
+        isSafeInteger(message.sequence) &&
+        message.sequence > 0 &&
         isUpdateSource(message.source)
       );
     case "APPLY_LINK":
@@ -98,5 +104,11 @@ export function isNewerSequence(
   sequence: number,
   lastSequence: number,
 ): boolean {
-  return Number.isInteger(sequence) && sequence > lastSequence;
+  return (
+    Number.isSafeInteger(sequence) &&
+    Number.isSafeInteger(lastSequence) &&
+    sequence > 0 &&
+    lastSequence >= 0 &&
+    sequence > lastSequence
+  );
 }
