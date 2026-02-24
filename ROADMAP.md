@@ -10,5 +10,3 @@
 - Reduce extension-host CPU pressure in markdown sync path (`htmlToMarkdownSync` on `UPDATE`)
 
 ## Bugs
-
-- Investigate intermittent focus/scroll jump during rapid undo/redo in markdown editor sync path

@@ -47,7 +47,7 @@ Sync invariants:
 
 Current caveats:
 
-- External re-sync decisions are made in `DocumentSync.handleDidChange` using canonical markdown equivalence and expected-apply echo suppression queue; this remains the primary area for undo/redo race debugging
+- Undo/redo keybindings are overridden via `package.json` `contributes.keybindings` when `activeCustomEditorId` matches our editor; this prevents VS Code's document-level undo from racing with Tiptap's ProseMirror History on Ctrl+Z and routes undo/redo through the webview as the single source of truth
 - `DocumentSync.handleWebviewMessage` uses `htmlToMarkdownSync` on each `UPDATE` to keep canonical baseline fresh; this improves race handling but can add extension-host CPU pressure during rapid typing/undo bursts
 
 ### Markdown

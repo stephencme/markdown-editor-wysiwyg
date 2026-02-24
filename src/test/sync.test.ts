@@ -24,9 +24,14 @@ suite("selection restore", () => {
     assert.deepStrictEqual(selection, { from: 2, to: 5 });
   });
 
-  test("does not clamp out-of-bounds selection to end", () => {
+  test("clamps out-of-bounds selection to maxPosition", () => {
     const selection = getRestorableSelection({ from: 12, to: 12 }, 10);
-    assert.strictEqual(selection, null);
+    assert.deepStrictEqual(selection, { from: 10, to: 10 });
+  });
+
+  test("clamps only the out-of-bounds endpoint", () => {
+    const selection = getRestorableSelection({ from: 5, to: 12 }, 10);
+    assert.deepStrictEqual(selection, { from: 5, to: 10 });
   });
 
   test("rejects invalid selection shape", () => {
@@ -103,6 +108,25 @@ suite("sync equivalence gate", () => {
     );
     assert.strictEqual(matched, false);
     assert.deepStrictEqual(canonicals, ["A", "B"]);
+  });
+
+  test("queue entry consumed during applying-edit path cannot false-positive on undo", () => {
+    // Simulate: flushToDocument enqueues before applyEdit
+    const canonical = "# Heading\n\nParagraph";
+    let queue = enqueueExpectedApplyCanonical([], canonical);
+
+    // Simulate: handleDidChange fires while isApplyingWebviewEdit is true;
+    // the fix consumes the entry before returning
+    const applyingResult = consumeExpectedApplyCanonical(queue, canonical);
+    queue = applyingResult.canonicals;
+    assert.strictEqual(applyingResult.matched, true);
+    assert.deepStrictEqual(queue, []);
+
+    // Simulate: undo reverts document to same canonical text;
+    // must not match because the entry was already consumed
+    const undoResult = consumeExpectedApplyCanonical(queue, canonical);
+    assert.strictEqual(undoResult.matched, false);
+    assert.deepStrictEqual(undoResult.canonicals, []);
   });
 });
 

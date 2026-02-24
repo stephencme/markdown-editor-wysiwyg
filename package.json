@@ -8,7 +8,7 @@
     "type": "git",
     "url": "https://github.com/stephencme/markdown-editor-wysiwyg.git"
   },
-  "version": "0.6.0",
+  "version": "0.7.0",
   "engines": {
     "vscode": "^1.105.0"
   },
@@ -32,6 +32,33 @@
         "command": "stephencme.markdownEditor.openWithMarkdownEditor",
         "title": "Open with Markdown Editor (WYSIWYG)",
         "icon": "$(markdown)"
+      },
+      {
+        "command": "stephencme.markdownEditor.undo",
+        "title": "Undo (Markdown Editor)"
+      },
+      {
+        "command": "stephencme.markdownEditor.redo",
+        "title": "Redo (Markdown Editor)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "stephencme.markdownEditor.undo",
+        "key": "ctrl+z",
+        "mac": "cmd+z",
+        "when": "activeCustomEditorId == stephencme.markdownEditor.editorView"
+      },
+      {
+        "command": "stephencme.markdownEditor.redo",
+        "key": "ctrl+shift+z",
+        "mac": "cmd+shift+z",
+        "when": "activeCustomEditorId == stephencme.markdownEditor.editorView"
+      },
+      {
+        "command": "stephencme.markdownEditor.redo",
+        "key": "ctrl+y",
+        "when": "activeCustomEditorId == stephencme.markdownEditor.editorView"
       }
     ],
     "menus": {

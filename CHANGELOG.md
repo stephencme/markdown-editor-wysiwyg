@@ -4,6 +4,14 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## \[Unreleased]
 
+## \[0.7.0] - 2026-02-23
+
+### Fixed
+
+- Resolved undo/redo conflicts by overriding keybindings when the markdown editor is active and routing all undo/redo through the webview as the single source of truth
+- Fixed expected-apply queue consumption during applying-edit path to prevent stale entries from suppressing legitimate undo SET_CONTENT
+- Improved out-of-bounds selection clamping to preserve cursor position instead of discarding it
+
 ## \[0.6.0] - 2026-02-23
 
 ### Changed

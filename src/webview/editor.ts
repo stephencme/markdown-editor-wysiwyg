@@ -29,6 +29,11 @@ let outgoingUpdateSequence = 0;
 let lastHostSequence = 0;
 const SYNC_DEBUG_SCOPE = "MarkdownWebviewSync";
 
+// Batch rapid UNDO/REDO messages into a single animation frame so the
+// browser only paints the final state and only one UPDATE round-trip fires
+let pendingUndoRedoOps: ("UNDO" | "REDO")[] = [];
+let undoRedoRafId: number | null = null;
+
 function logSync(action: string, details?: unknown): void {
   if (details === undefined) {
     console.log(`[${SYNC_DEBUG_SCOPE}:${action}]`);
@@ -198,6 +203,28 @@ window.addEventListener("message", (event) => {
           from: editor.state.selection.from,
           to: editor.state.selection.to,
         },
+      });
+    }
+    return;
+  }
+
+  if (message.type === "UNDO" || message.type === "REDO") {
+    pendingUndoRedoOps.push(message.type);
+    if (undoRedoRafId === null) {
+      undoRedoRafId = requestAnimationFrame(() => {
+        undoRedoRafId = null;
+        const ops = pendingUndoRedoOps;
+        pendingUndoRedoOps = [];
+        // Suppress intermediate onUpdate so only the final state syncs
+        isSettingContent = true;
+        for (let i = 0; i < ops.length - 1; i++) {
+          if (ops[i] === "UNDO") editor.chain().undo().run();
+          else editor.chain().redo().run();
+        }
+        isSettingContent = false;
+        // Final op fires onUpdate normally
+        if (ops[ops.length - 1] === "UNDO") editor.chain().undo().run();
+        else editor.chain().redo().run();
       });
     }
     return;

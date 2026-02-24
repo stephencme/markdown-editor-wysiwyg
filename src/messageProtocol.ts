@@ -30,7 +30,9 @@ export type HostToWebviewMessage =
       sequence: number;
       source: UpdateSource;
     }
-  | { type: "APPLY_LINK"; href: string; text?: string };
+  | { type: "APPLY_LINK"; href: string; text?: string }
+  | { type: "UNDO" }
+  | { type: "REDO" };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -95,6 +97,9 @@ export function isHostToWebviewMessage(
         typeof message.href === "string" &&
         (message.text === undefined || typeof message.text === "string")
       );
+    case "UNDO":
+    case "REDO":
+      return true;
     default:
       return false;
   }

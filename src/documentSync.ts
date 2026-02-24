@@ -369,9 +369,20 @@ export class DocumentSync implements vscode.Disposable {
   ): Promise<void> {
     if (event.document.uri.toString() !== this.document.uri.toString()) return;
     if (event.contentChanges.length === 0) return;
-    if (this.state.isApplyingWebviewEdit) return;
     const documentText = event.document.getText();
     const documentMarkdownCanonical = canonicalizeMarkdownForSync(documentText);
+
+    // Consume matching canonical even when we originated the edit;
+    // failing to consume here causes stale queue entries that suppress
+    // legitimate SET_CONTENT during undo
+    if (this.state.isApplyingWebviewEdit) {
+      const consumed = consumeExpectedApplyCanonical(
+        this.state.expectedApplyMarkdownCanonicals,
+        documentMarkdownCanonical,
+      );
+      this.state.expectedApplyMarkdownCanonicals = consumed.canonicals;
+      return;
+    }
 
     // applyEdit path can surface out-of-order after newer webview UPDATEs;
     // consume any matching canonical to avoid misclassifying as external

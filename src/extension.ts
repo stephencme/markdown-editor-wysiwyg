@@ -33,7 +33,18 @@ function setDefaultEditorAssociation(): void {
 export function activate(context: vscode.ExtensionContext) {
   console.log(`[${EDITOR_NAMESPACE}:activate] extension active`);
   setDefaultEditorAssociation();
-  context.subscriptions.push(MarkdownEditorProvider.register(context));
+  const { provider, disposable } = MarkdownEditorProvider.register(context);
+  context.subscriptions.push(disposable);
+  context.subscriptions.push(
+    vscode.commands.registerCommand(`${EDITOR_NAMESPACE}.undo`, () =>
+      provider.postMessageToActivePanel({ type: "UNDO" }),
+    ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(`${EDITOR_NAMESPACE}.redo`, () =>
+      provider.postMessageToActivePanel({ type: "REDO" }),
+    ),
+  );
   context.subscriptions.push(
     vscode.commands.registerCommand(
       `${EDITOR_NAMESPACE}.openWithBuiltInTextEditor`,
