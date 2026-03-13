@@ -291,6 +291,11 @@ export class DocumentSync implements vscode.Disposable {
     const href = message.href;
     if (hasExplicitScheme(href)) {
       vscode.env.openExternal(vscode.Uri.parse(href));
+    } else if (href.startsWith("#")) {
+      // Anchor-only links should be handled entirely in the webview (scroll to
+      // heading). If one reaches the host it means the webview-side guard was
+      // bypassed, so we silently ignore it rather than trying to open "#foo"
+      // as a file path (which would produce a confusing "file not found" error).
     } else {
       const docDir = vscode.Uri.joinPath(this.document.uri, "..");
       vscode.commands.executeCommand(
