@@ -50,6 +50,42 @@ function requireEditorElement(): HTMLElement {
   return element;
 }
 
+/**
+ * Convert heading text to a URL-friendly slug, matching the GitHub
+ * Flavored Markdown heading-anchor algorithm used by most Markdown renderers.
+ * e.g. "My Section! 🚀" → "my-section-"
+ */
+function slugifyHeading(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .trim()
+    .replace(/[\s]+/g, "-");
+}
+
+/**
+ * Scroll to an in-page anchor. Tries element id first, then falls back to
+ * matching slugified heading text so anchor links work even when headings
+ * don't carry explicit id attributes.
+ */
+function scrollToAnchor(anchor: string): void {
+  const byId = document.getElementById(anchor);
+  if (byId) {
+    byId.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+
+  const headings = document.querySelectorAll<HTMLElement>(
+    "#editor h1, #editor h2, #editor h3, #editor h4, #editor h5, #editor h6",
+  );
+  for (const heading of headings) {
+    if (slugifyHeading(heading.textContent ?? "") === anchor) {
+      heading.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+  }
+}
+
 const editor = new Editor({
   element: requireEditorElement(),
   extensions: [
@@ -80,6 +116,14 @@ const editor = new Editor({
                   const href = anchor.getAttribute("data-href");
                   if (!href) return false;
                   event.preventDefault();
+                  // Anchor-only links (e.g. #my-section) should scroll within
+                  // the current document instead of asking the host to open a
+                  // file — which would incorrectly try to open "#my-section"
+                  // as a filesystem path.
+                  if (href.startsWith("#")) {
+                    scrollToAnchor(href.slice(1));
+                    return true;
+                  }
                   vscode.postMessage({ type: "OPEN_LINK", href });
                   return true;
                 },
